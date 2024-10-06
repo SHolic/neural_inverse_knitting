@@ -2,7 +2,8 @@ from __future__ import division
 import os
 import math
 import time
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import numpy as np
 import scipy
 import re
@@ -93,13 +94,13 @@ def model_composited(t_imgs_dict, t_labels_dict, params = dict()):
                     t_logits = oper_img2img(t_input, prog_ch, params, 'img2prog')
                 elif reduce_type == 'avg_pooling':
                     t_logits = oper_img2img(t_resi_inp, prog_ch, params, 'img2prog')
-                    t_logits = tf.contrib.layers.avg_pool2d(t_logits, [8,8], 8)
+                    t_logits = tf.layers.average_pooling2d(t_logits, [8,8], 8)
                 elif reduce_type == 'max_pooling':
                     t_logits = oper_img2img(t_resi_inp, prog_ch, params, 'img2prog')
-                    t_logits = tf.contrib.layers.max_pool2d(t_logits, [8,8], 8)
+                    t_logits = tf.layers.max_pooling2d(t_logits, [8,8], 8)
                 elif reduce_type == 'unet':
                     t_logits = generator_unet(t_resi_inp, prog_ch, params, 'img2prog')
-                    t_logits = tf.contrib.layers.avg_pool2d(t_logits, [8,8], 8)
+                    t_logits = tf.layers.average_pooling2d(t_logits, [8,8], 8)
                 else:
                     raise ValueError('Invalid reduction type %s' % reduce_type)
 

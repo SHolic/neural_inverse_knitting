@@ -1,7 +1,8 @@
 import os
 import math
 import time
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import numpy as np
 import scipy
 import re
@@ -12,6 +13,7 @@ from .spatial_transformer import transformer
 from util import read_image, comp_confusionmat
 
 from .tensorflow_vgg import custom_vgg19
+import tensorflow_addons as tfa
 
 prog_ch = 17
 nch_res = arch_para.resblk_DimCh
@@ -130,7 +132,7 @@ def oper_warping(t_texture,
     and outputs the warped image
     '''
     with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
-        warped_image, flow_field = tf.contrib.image.sparse_image_warp(t_texture,
+        warped_image, flow_field = tfa.image.sparse_image_warp(t_texture,
             t_src_landmark_yx, t_dst_landmark_yx,
             interpolation_order = order,
             regularization_weight = regularization,
@@ -219,7 +221,7 @@ def oper_global_warping(t_img, name='global_warp'):
             ])
         print('xform: ', xform_diff.get_shape())
         xform_diff = tf.reshape(xform_diff, [xform_diff.get_shape()[0], -1])
-        xform_diff = tf.contrib.layers.fully_connected(xform_diff, 6, scope='fc-1d')
+        xform_diff = tf.layers.dense(xform_diff, 6, scope='fc-1d')
 
         # identity transformation
         batch_size = t_img.get_shape()[0]
@@ -259,7 +261,7 @@ def oper_img2prog(t_img, params = dict(), name='img2prog'):
     outputs those as well as the corresponding 20x20 argmax label prediction
     '''
     def dilated_conv(h, n=64, r=2, k=3):
-        h = tf.contrib.layers.convolution2d(h, n, 
+        h = tf.layers.conv2d(h, n, 
                                             kernel_size=k, 
                                             rate=2, 
                                             stride=1, 

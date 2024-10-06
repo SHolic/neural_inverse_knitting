@@ -1,6 +1,7 @@
 import math
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 TF_EPS = tf.constant(1e-12, tf.float32)
 tf_fn_expdim2to4 = lambda tensor,dim0,dim1: tf.expand_dims(tf.expand_dims(tensor, dim0), dim1)
@@ -131,13 +132,13 @@ class batch_norm(object):
             self.name = name
 
     def __call__(self, x, train=True):
-        return tf.contrib.layers.batch_norm(
-            x,
-            decay=self.momentum,
-            updates_collections=None,
-            epsilon=self.epsilon,
-            scale=True,
-            scope=self.name)
+       with tf.variable_scope(self.name):
+            bn_layer = tf.compat.v1.layers.BatchNormalization(
+                momentum=self.momentum,
+                epsilon=self.epsilon,
+                scale=True
+            )
+            return bn_layer(x, training=train)
 
 
 def disc_conv(batch_input, out_channels, stride):
@@ -203,7 +204,7 @@ def thoo_steer_conv_ch(input_,
 
         w = tf.get_variable(
             'weight', [k_h, k_w, 1, output_dim],
-            initializer=tf.contrib.layers.xavier_initializer_conv2d())
+            initializer=tf.keras.initializers.glorot_uniform())
         biases = tf.get_variable(
             'biases', [output_dim], initializer=tf.constant_initializer(0.0))
 
@@ -245,7 +246,7 @@ def thoo_steer_conv(input_,
     with tf.variable_scope(name):
         w = tf.get_variable(
             'weight', [k_h, k_w, input_.get_shape()[-1], output_dim],
-            initializer=tf.contrib.layers.xavier_initializer_conv2d())
+            initializer=tf.keras.initializers.glorot_uniform())
         biases = tf.get_variable(
             'biases', [output_dim], initializer=tf.constant_initializer(0.0))
 
@@ -324,7 +325,7 @@ def conv2d(input_,
     with tf.variable_scope(name):
         w = tf.get_variable(
             'weight', [k_h, k_w, input_.get_shape()[-1], output_dim],
-            initializer=tf.contrib.layers.xavier_initializer_conv2d())
+            initializer=tf.keras.initializers.glorot_uniform())
         conv = tf.nn.conv2d(
             input_, w, strides=[1, d_h, d_w, 1], padding='SAME')
 
@@ -348,7 +349,7 @@ def conv2d_nobias(input_,
     with tf.variable_scope(name):
         w = tf.get_variable(
             'weight', [k_h, k_w, input_.get_shape()[-1], output_dim],
-            initializer=tf.contrib.layers.xavier_initializer_conv2d())
+            initializer=tf.keras.initializers.glorot_uniform())
         conv = tf.nn.conv2d(
             input_, w, strides=[1, d_h, d_w, 1], padding=t_padding)
         return conv

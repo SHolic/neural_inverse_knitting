@@ -2,7 +2,8 @@ from __future__ import division
 import os
 import math
 import time
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import numpy as np
 import scipy
 import re
@@ -566,7 +567,7 @@ def model_composited_RFI(t_imgs_dict, t_labels_dict, params = dict()):
         def encoder(t_input, name):
             with runits('relu') as activations:
                 t_logits = oper_img2img(t_input, prog_ch, params=params, name='img2prog')
-                t_logits = tf.contrib.layers.avg_pool2d(t_logits, [8,8], 8)
+                t_logits = tf.layers.average_pooling2d(t_logits, [8,8], 8)
                 t_instr = tf.argmax(t_logits, axis=3, name="prediction")
                 net.latent[name] = t_logits
                 net.logits[name] = t_logits
@@ -965,7 +966,7 @@ def model_composited(t_imgs_dict, t_labels_dict, params = dict()):
         def encoder(t_input, name):
             with runits('relu') as activations:
                 t_logits = oper_img2img(t_input, prog_ch, params=params, name='img2prog')
-                t_logits = tf.contrib.layers.avg_pool2d(t_logits, [8,8], 8)
+                t_logits = tf.layers.average_pooling2d(t_logits, [8,8], 8)
                 t_instr = tf.argmax(t_logits, axis=3, name="prediction")
                 net.latent[name] = t_logits
                 net.logits[name] = t_logits

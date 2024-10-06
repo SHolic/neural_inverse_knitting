@@ -5,9 +5,10 @@ from numpy.random import choice, permutation
 import cv2
 from math import ceil
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from tensorflow.data import Dataset, TextLineDataset
-from tensorflow.contrib.data import shuffle_and_repeat
+# from tensorflow.contrib.data import shuffle_and_repeat
 
 from time import gmtime, strftime
 from skimage.transform import warp, AffineTransform

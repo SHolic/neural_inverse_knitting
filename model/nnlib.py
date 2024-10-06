@@ -7,7 +7,8 @@ import numpy as np
 from math import floor
 from PIL import Image
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from contextlib import contextmanager
 import re
 """ helper functions """
@@ -104,13 +105,13 @@ def loss_huber(labels, predictions, delta=1.0):
 
 
 def avgpool(h, s=2, k=2):
-    h = tf.contrib.layers.avg_pool2d(
+    h = tf.layers.average_pooling2d(
         h, kernel_size=k, stride=s, padding='VALID')
     return h
 
 
 def maxpool(h, s=2, k=2):
-    h = tf.contrib.layers.max_pool2d(
+    h = tf.layers.max_pooling2d(
         h, kernel_size=k, stride=s, padding='SAME')
     return h
 
@@ -133,12 +134,12 @@ def conv_pad(h, n=64, s=1, k=3):
         h,
         tf.constant([[0, 0], [padsz, padsz], [padsz, padsz], [0, 0]]),
         mode='SYMMETRIC')
-    h = tf.contrib.layers.convolution2d(
+    h = tf.layers.conv2d(
         h, n, kernel_size=k, stride=s, padding='VALID', activation_fn=None)
     return h
 
 def conv_valid(h, n=64, s=1, k=3):
-    h = tf.contrib.layers.convolution2d(
+    h = tf.layers.conv2d(
         h, n, kernel_size=k, stride=s, padding='VALID', activation_fn=None)
     return h
 
@@ -153,10 +154,10 @@ def conv(h, n=64, s=1, k=3, w_initializer=None, w_normalization=True):
         n = h.get_shape()[-1] # use input's shape
     
     if w_initializer is None:
-        h = tf.contrib.layers.convolution2d(
+        h = tf.layers.conv2d(
             h, n, kernel_size=k, stride=s, padding='SAME', activation_fn=None)
     else:
-        h = tf.contrib.layers.convolution2d(
+        h = tf.layers.conv2d(
             h,
             n,
             kernel_size=k,
@@ -170,11 +171,11 @@ def conv(h, n=64, s=1, k=3, w_initializer=None, w_normalization=True):
 
 def fc(h, n=1024, w_initializer=None):
     if w_initializer is None:
-        h = tf.contrib.layers.fully_connected(
-            tf.contrib.layers.flatten(h), num_outputs=n, activation_fn=None)
+        h = tf.layers.dense(
+            tf.layers.flatten(h), num_outputs=n, activation_fn=None)
     else:
-        h = tf.contrib.layers.fully_connected(
-            tf.contrib.layers.flatten(h),
+        h = tf.layers.dense(
+            tf.layers.flatten(h),
             num_outputs=n,
             activation_fn=None,
             weights_initializer=w_initializer)
@@ -243,22 +244,24 @@ def runit(h, rtype = None):
         out = pixel_norm(out)
     elif rtype == 'relu_in':
         out = relu(h)
-        out = tf.contrib.layers.instance_norm(out)
+        out = tfa.layers.InstanceNormalization(axis=-1)(out)
     elif rtype == 'in_relu':
-        out = tf.contrib.layers.instance_norm(h,
-            scale = False, activation_fn = relu)
+        out = tfa.layers.InstanceNormalization(axis=-1, scale=False)(h)
+        out = relu(out)
     elif rtype == 'lrelu_in':
         out = lrelu(h)
-        out = tf.contrib.layers.instance_norm(out)
+        out = tfa.layers.InstanceNormalization(axis=-1)(out)
     elif rtype == 'in_lrelu':
-        out = tf.contrib.layers.instance_norm(h,
-            scale = False, activation_fn = lrelu)
+        out = tfa.layers.InstanceNormalization(axis=-1, scale=False)(h)
+        out = lrelu(out)
     elif rtype == 'bn_relu':
-        out = tf.contrib.layers.batch_norm(h,
-            decay = 0.9, scale = False, activation_fn = relu, is_training = True)
+        bn_layer = tf.layers.BatchNormalization(momentum=0.9)(h, scale=False)
+        out = bn_layer(h, training=True)
+        out = relu(out)
     elif rtype == 'bn_relu_test':
-        out = tf.contrib.layers.batch_norm(h,
-            decay = 0.9, scale = False, activation_fn = relu, is_training = False)
+        bn_layer = tf.layers.BatchNormalization(momentum=0.9)(h, scale=False)
+        out = bn_layer(h, training=False)
+        out = relu(out)
     elif rtype == 'glu':
         # gated linear unit
         # @see https://arxiv.org/abs/1612.08083
@@ -279,8 +282,8 @@ def runit(h, rtype = None):
 
 def in_relu(h):
     print('in_relu')
-    h = tf.contrib.layers.instance_norm(h,
-            scale = False, activation_fn = relu)
+    h = tfa.layers.InstanceNormalization(axis=-1, scale=False)(h)
+    h = relu(h)
     return h
 
 def relu(h):
@@ -341,14 +344,16 @@ def grp_norm(h, ngroup=32, invaxis=(-3, -2)):
 
 def batch_norm(h, is_training=True, scale=True):
     # h = contribut_group_norm(h, groups = ngroup)
-    h = tf.contrib.layers.batch_norm(
-        h, decay=0.9, scale=scale, is_training=is_training)
+    batch_norm_layer = tf.layers.BatchNormalization(
+        h, momentum=0.9, scale=scale)
+    h = batch_norm_layer(h, training=is_training)
     return h
 
 
 def inst_norm(h, name='inst_norm'):
     with tf.variable_scope(name):
-        h = tf.contrib.layers.instance_norm(h)
+        inst_norm_layer = tfa.layers.InstanceNormalization(axis=-1)
+        h = inst_norm_layer(h)
     return h
 
 def pixel_norm(x, epsilon=1e-8):
