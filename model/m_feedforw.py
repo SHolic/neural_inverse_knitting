@@ -122,7 +122,9 @@ class FeedForwardNetworks(Model):
             'bg_weight': 0.1,
             'bunet_test': 0,
             'use_resnet': 0,
-            'use_renderer': 0
+            'use_renderer': 0,
+            'use_rend': 1,
+            'use_tran': 1
         }
         self.oparam.params.update(weight_map(tf_flag.params, 'params'))
 

@@ -685,8 +685,9 @@ def total_loss_RFI(net, t_inst_dict, params = dict()):
         # generated data
         curdataname = 'real'
         net.vgg[curdataname] = net.vggobj.build(net.resi_outs[curdataname])
-        curdataname = 'tran'
-        net.vgg[curdataname] = net.vggobj.build(net.resi_outs[curdataname])
+        if params.get('use_tran', 0):
+            curdataname = 'tran'
+            net.vgg[curdataname] = net.vggobj.build(net.resi_outs[curdataname])
 
     if params.get('discr_img', 0):
         with tf.variable_scope("discriminator"):
@@ -704,11 +705,12 @@ def total_loss_RFI(net, t_inst_dict, params = dict()):
             net.discr['image']['gt_' + curdataname] = t_domain
 
             # generated data
-            curdataname = 'tran'
-            t_domain = discriminator_cond(net.resi_outs[curdataname], 
-                                            t_inst_synt,
-                                            params, name="image_domain")
-            net.discr['image'][curdataname] = t_domain
+            if params.get('use_tran', 0):
+                curdataname = 'tran'
+                t_domain = discriminator_cond(net.resi_outs[curdataname], 
+                                                t_inst_synt,
+                                                params, name="image_domain")
+                net.discr['image'][curdataname] = t_domain
 
             curdataname = 'real'
             t_domain = discriminator_cond(net.resi_outs[curdataname], 
@@ -726,23 +728,34 @@ def total_loss_RFI(net, t_inst_dict, params = dict()):
         t_discr = net.discr['image'][name]
         loss_dis = tf_loss_with_select(t_discr, tf.ones_like(t_discr), which_loss = discr_type)
         loss_dict_Disc['loss_D_image/' + name] = loss_dis
-        name = 'gt_real'
-        t_discr = net.discr['image'][name]
-        loss_dis = tf_loss_with_select(t_discr, -tf.ones_like(t_discr), which_loss = discr_type)
-        loss_dict_Disc['loss_D_image/' + name] = loss_dis/3.
-        name = 'tran'
-        t_discr = net.discr['image'][name]
-        loss_dis = tf_loss_with_select(t_discr, -tf.ones_like(t_discr), which_loss = discr_type)
-        loss_dict_Disc['loss_D_image/' + name] = loss_dis/3.
-        name = 'real'
-        t_discr = net.discr['image'][name]
-        loss_dis = tf_loss_with_select(t_discr, -tf.ones_like(t_discr), which_loss = discr_type)
-        loss_dict_Disc['loss_D_image/' + name] = loss_dis/3.
+        if params.get('use_tran', 0):
+            name = 'gt_real'
+            t_discr = net.discr['image'][name]
+            loss_dis = tf_loss_with_select(t_discr, -tf.ones_like(t_discr), which_loss = discr_type)
+            loss_dict_Disc['loss_D_image/' + name] = loss_dis/3.
+            name = 'tran'
+            t_discr = net.discr['image'][name]
+            loss_dis = tf_loss_with_select(t_discr, -tf.ones_like(t_discr), which_loss = discr_type)
+            loss_dict_Disc['loss_D_image/' + name] = loss_dis/3.
+            name = 'real'
+            t_discr = net.discr['image'][name]
+            loss_dis = tf_loss_with_select(t_discr, -tf.ones_like(t_discr), which_loss = discr_type)
+            loss_dict_Disc['loss_D_image/' + name] = loss_dis/3.
+        else:
+            name = 'gt_real'
+            t_discr = net.discr['image'][name]
+            loss_dis = tf_loss_with_select(t_discr, -tf.ones_like(t_discr), which_loss = discr_type)
+            loss_dict_Disc['loss_D_image/' + name] = loss_dis/2.
+            name = 'real'
+            t_discr = net.discr['image'][name]
+            loss_dis = tf_loss_with_select(t_discr, -tf.ones_like(t_discr), which_loss = discr_type)
+            loss_dict_Disc['loss_D_image/' + name] = loss_dis/2.            
 
-        name = 'tran'
-        t_discr = net.discr['image'][name]
-        loss_gen = tf_loss_with_select(t_discr, tf.ones_like(t_discr), which_loss = discr_type)
-        loss_dict_Gene['loss_G_image/' + name] = loss_gen 
+        if params.get('use_tran', 0):
+            name = 'tran'
+            t_discr = net.discr['image'][name]
+            loss_gen = tf_loss_with_select(t_discr, tf.ones_like(t_discr), which_loss = discr_type)
+            loss_dict_Gene['loss_G_image/' + name] = loss_gen 
 
         name = 'real'
         t_discr = net.discr['image'][name]
@@ -766,16 +779,14 @@ def total_loss_RFI(net, t_inst_dict, params = dict()):
                                     net.resi_outs[curdataname]
                                 ),
                             which_loss = ae_loss_type)
-            # loss_dict_Gene['loss_unsup/rough_real_vs_freal'] = loss_unsup
+            loss_dict_Gene['loss_unsup/rough_real_vs_freal'] = loss_unsup
 
-            loss_unsup = tf_loss_with_select(
-                                    net.resi_imgs['rend'], 
-                                    net.resi_outs['tran'],
-                            which_loss = ae_loss_type)
-            # loss_unsup = tf_loss_with_select(net.activations['unsup']['img2prog'][2],
-            #                                  net.activations['unsup_feedback']['img2prog'][2],
-            #                                  which_loss='smooth_l1')
-            loss_dict_Gene['loss_unsup/rough_gtrend_vs_ftrans'] = 100.*loss_unsup
+            if params.get('use_tran', 0):
+                loss_unsup = tf_loss_with_select(
+                                        net.resi_imgs['rend'], 
+                                        net.resi_outs['tran'],
+                                which_loss = ae_loss_type)
+                loss_dict_Gene['loss_unsup/rough_gtrend_vs_ftrans'] = 100.*loss_unsup
 
         # VGG perceptual loss
         if params.get('bvggloss', 0):
@@ -787,12 +798,13 @@ def total_loss_RFI(net, t_inst_dict, params = dict()):
             loss_dict_Gene['loss_vgg_percept/' + curlayer] = loss_perc_pool2*0.25 
             # normalize by the number of combinations (real, unsuper, conv2_2, pool3)
 
-            curlayer = 'pool3'
-            loss_perc_pool2 = 1.*tf_loss_with_select(
-                                (1./128.)*net.vgg['gt_rend'][curlayer], 
-                                (1./128.)*net.vgg['tran'][curlayer], 
-                                which_loss = 'l2')
-            loss_dict_Gene['loss_vgg_percept/' + curlayer] = loss_perc_pool2*0.25 
+            if params.get('use_tran', 0):
+                curlayer = 'pool3'
+                loss_perc_pool2 = 1.*tf_loss_with_select(
+                                    (1./128.)*net.vgg['gt_rend'][curlayer], 
+                                    (1./128.)*net.vgg['tran'][curlayer], 
+                                    which_loss = 'l2')
+                loss_dict_Gene['loss_vgg_percept/' + curlayer] = loss_perc_pool2*0.25 
 
             # VGG style losses 
             # applied to {synt, real} except {unsup}

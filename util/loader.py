@@ -90,9 +90,13 @@ class Loader(object):
             'tran': 'transfer/Cable1_019_0_19/' + transfer_type,
             'cgan': 'transfer/cyclegan/' + transfer_type
         }
+        # self.fake_dirs = {
+        #     name: os.path.join(self.dataset_path, path) for (name, path) in fake_paths.items()
+        #         if self.params.get('use_' + name, name == 'rend' or name == 'tran')
+        # }
         self.fake_dirs = {
             name: os.path.join(self.dataset_path, path) for (name, path) in fake_paths.items()
-                if self.params.get('use_' + name, name == 'rend' or name == 'tran')
+                if self.params.get('use_' + name, 0)
         }
         for name, path in self.fake_dirs.items():
             print('Using %s from %s' % (name, path))
