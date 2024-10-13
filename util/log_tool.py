@@ -5,6 +5,7 @@ import tfmpl
 import itertools
 import pdb
 import matplotlib
+# matplotlib.use('Agg')
 import io
 import textwrap
 
@@ -182,8 +183,8 @@ def _plot_confusion_matrix(cm, labels):
     """
 
     # attach a new canvas if not exists
-    if fig.canvas is None:
-        matplotlib.backends.backend_agg.FigureCanvasAgg(fig)
+    if fig.canvas is None or not isinstance(fig.canvas, matplotlib.backends.backend_agg.FigureCanvasAgg):
+        fig.canvas = matplotlib.backends.backend_agg.FigureCanvasAgg(fig)
 
     def fig2rgb_array(fig):
         fig.canvas.draw()
