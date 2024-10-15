@@ -167,7 +167,7 @@ def _plot_confusion_matrix(cm, labels):
     ax.yaxis.tick_left()
 
     for i, j in itertools.product(range(numClasses), range(numClasses)):
-        ax.text(j, i, format(cm[i, j], '.1f') if (cm[i, j] != 0) and (cm[i, j] != np.nan) else '-', 
+        ax.text(j, i, format(cm[i, j], '.3f') if (cm[i, j] != 0) and (cm[i, j] != np.nan) else '-', 
                 horizontalalignment="center", 
                 verticalalignment='center', 
                 color="black", 

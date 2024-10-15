@@ -863,17 +863,19 @@ def total_loss_RFI(net, t_inst_dict, params = dict()):
 
         # syntax loss
         # applied to {all} except {unsup}
+        syntax = params.get('syntax', 1)
         syntax_binary = params.get('syntax_binary', 0)
-        for name in net.instr.keys():
-            if name.startswith('unsup') and not params.get('unsup_syntax', 0): # skip
-                continue
+        if syntax:
+            for name in net.instr.keys():
+                if name.startswith('unsup') and not params.get('unsup_syntax', 0): # skip
+                    continue
 
-            if syntax_binary:
-                t_instr = net.instr[name]
-            else:
-                t_instr = net.logits[name]
-            loss_syn = syntax_loss(t_instr, params, syntax_binary)
-            loss_dict_Gene['loss_syntax/' + name] = loss_syn
+                if syntax_binary:
+                    t_instr = net.instr[name]
+                else:
+                    t_instr = net.logits[name]
+                loss_syn = syntax_loss(t_instr, params, syntax_binary)
+                loss_dict_Gene['loss_syntax/' + name] = loss_syn
 
         # accuracy measurements
         net.acc = { 'full' : dict(), 'fg': dict() }
