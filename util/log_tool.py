@@ -5,6 +5,7 @@ import tfmpl
 import itertools
 import pdb
 import matplotlib
+# matplotlib.use('Agg')
 import io
 import textwrap
 
@@ -166,7 +167,7 @@ def _plot_confusion_matrix(cm, labels):
     ax.yaxis.tick_left()
 
     for i, j in itertools.product(range(numClasses), range(numClasses)):
-        ax.text(j, i, format(cm[i, j], '.1f') if (cm[i, j] != 0) and (cm[i, j] != np.nan) else '-', 
+        ax.text(j, i, format(cm[i, j], '.3f') if (cm[i, j] != 0) and (cm[i, j] != np.nan) else '-', 
                 horizontalalignment="center", 
                 verticalalignment='center', 
                 color="black", 
@@ -182,8 +183,8 @@ def _plot_confusion_matrix(cm, labels):
     """
 
     # attach a new canvas if not exists
-    if fig.canvas is None:
-        matplotlib.backends.backend_agg.FigureCanvasAgg(fig)
+    if fig.canvas is None or not isinstance(fig.canvas, matplotlib.backends.backend_agg.FigureCanvasAgg):
+        fig.canvas = matplotlib.backends.backend_agg.FigureCanvasAgg(fig)
 
     def fig2rgb_array(fig):
         fig.canvas.draw()

@@ -9,6 +9,7 @@ _checkpoint
 env
 old
 dataset
+dataset-backup
 dataset.zip
 *.py[cod]
 *$py.class
