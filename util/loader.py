@@ -199,17 +199,17 @@ class Loader(object):
 
             def name2rend2realtran(name):
                 real_path1 = os.path.join(real_dir, '160x160', params.get('xfer_type', 'gray'), name.decode() + '.jpg')
-                real_path2 = os.path.join(real_dir, '160x160', params.get('xfer_type', 'gray'), name.decode() + '_front' + '.jpg')
+                # real_path2 = os.path.join(real_dir, '160x160', params.get('xfer_type', 'gray'), name.decode() + '_front' + '.jpg')
                 inst_path1 = os.path.join(inst_dir, name.decode() + '.png')
-                inst_path2 = os.path.join(inst_dir, name.decode() + '_front' + '.png')
+                # inst_path2 = os.path.join(inst_dir, name.decode() + '_front' + '.png')
                 if os.path.exists(real_path1):
                     real = read_image(real_path1)
                     rend = read_image(os.path.join(fake_dirs['rend'], name.decode() + '.jpg'))
                     inst = read_instr(inst_path1)
-                elif os.path.exists(real_path2):
-                    real = read_image(real_path2)
-                    rend = read_image(os.path.join(fake_dirs['rend'], name.decode() + '.jpg'), mirror=True)
-                    inst = read_instr(inst_path2)
+                # elif os.path.exists(real_path2):
+                #     real = read_image(real_path2)
+                #     rend = read_image(os.path.join(fake_dirs['rend'], name.decode() + '.jpg'), mirror=True)
+                #     inst = read_instr(inst_path2)
                 else:
                     real = read_image(os.path.join(self.dataset_path, 'transfer/Cable1_019_0_19/' + params.get('xfer_type', 'gray'), name.decode() + '.jpg'))
                     rend = read_image(os.path.join(fake_dirs['rend'], name.decode() + '.jpg'))
