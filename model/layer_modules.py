@@ -1593,7 +1593,10 @@ def syntax_loss(instr, params, binary = False):
         instr = tf.nn.softmax(instr)
     losses = []
     for i in range(8):
-        matname = os.path.join(dataset, 'syntax', 'T' + str(i+1) + '.txt')
+        if params.get('instr_type', 'front') == 'front':
+            matname = os.path.join(dataset, 'syntax-front', 'T' + str(i+1) + '.txt')
+        elif params.get('instr_type', 'front') == 'complete':
+            matname = os.path.join(dataset, 'syntax-complete', 'T' + str(i+1) + '.txt')
         T = np.loadtxt(matname, delimiter = ',')
         # select target slice of instructions
         t_src_slice = tf.slice(instr,

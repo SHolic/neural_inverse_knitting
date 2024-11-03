@@ -124,7 +124,8 @@ class FeedForwardNetworks(Model):
             'use_resnet': 0,
             'use_renderer': 0,
             'use_rend': 1,
-            'use_tran': 1
+            'use_tran': 1,
+            'instr_type': 'front'
         }
         self.oparam.params.update(weight_map(tf_flag.params, 'params'))
 

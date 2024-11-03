@@ -109,15 +109,18 @@ class Loader(object):
 
         self.fakes = list(self.fake_dirs.keys())
         self.real_dir = os.path.join(self.dataset_path, 'real')
-        self.inst_dir = os.path.join(self.dataset_path, 'instruction')
+        if self.params.get('instr_type', 'front') == 'front':
+            self.inst_dir = os.path.join(self.dataset_path, 'instruction-front')
+        elif self.params.get('instr_type', 'front') == 'complete':
+            self.inst_dir = os.path.join(self.dataset_path, 'instruction-complete')
         self.unsup_dir = os.path.join(self.dataset_path, unsup_path)
 
         # dataset from files
         labels = ['train', 'val']
-        self.datasets = { label: self.pipeline(label, num_threads, params) for label in labels }
+        self.datasets = { label: self.pipeline(label, num_threads) for label in labels }
         self.datasets['test'] = self.test_pipeline(num_threads)
 
-    def pipeline(self, name, num_threads, params):
+    def pipeline(self, name, num_threads):
         if not self.params.get('training', 1):
             return None
         synt_fname = os.path.join(self.dataset_path, name + '_synt.txt')
@@ -143,75 +146,19 @@ class Loader(object):
             unsup = unsup.shuffle(num_unsup).repeat()
 
             # map to corresonding files
-            # synthetic data
-            def name2synt(name):
-                fakes = [
-                    read_image(os.path.join(path, name.decode() + '.jpg'))
-                    for path in fake_dirs.values()
-                ]
-                inst = read_instr(os.path.join(inst_dir, name.decode() + '.png'))
-                return fakes + [inst]
-
-            # synt_types = [tf.float32 for _ in self.fakes] + [tf.int32]
-            # synt = synt.map(lambda name: tf.py_func(name2synt, [name], synt_types), num_parallel_calls = num_threads)
-
-            # real data
             augment = self.params.get('augment', 1)
-            def name2real(name):
-                inst = read_instr(os.path.join(inst_dir, name.decode() + '.png'))
-                if augment:
-                    src_dir = self.params.get('augment_src', 'best')
-                    # print('{}/{}/{}'.format(real_dir, str(src_dir), name.decode() + '.JPG'))
-                    full = read_image(os.path.join(real_dir, str(src_dir), 'rgb', name.decode() + '.jpg'), False)
-                    pnts = read_points(os.path.join(real_dir, str(src_dir), 'points', name.decode() + '.txt'))
-                    if isinstance(src_dir, float):
-                        pnts *= src_dir
-                    real = random_crop(full, pnts, self.params)
-                    # TODO add mirror augmentation
-                else:
-                    real = read_image(os.path.join(real_dir, '160x160', params.get('xfer_type', 'gray'), name.decode() + '.jpg'))
-                return real, inst
-            # real = real.map(lambda name: tuple(tf.py_func(name2real, [name], [tf.float32, tf.int32])), num_parallel_calls = num_threads)
-
-            # unsup data
-            def name2unsup(name):
-                if augment:
-                    # print('{}/{}/{}'.format(real_dir, str(src_dir), name.decode() + '.JPG'))
-                    img = read_image(os.path.join(self.unsup_dir, name.decode() + '.jpg'), False)
-                    imsz = img.shape # y,x,c
-                    # [TL, TR, BR, BL]
-                    real = random_crop(img, 
-                            np.array([[5,5],[imsz[1]-5,5],[imsz[1]-5,imsz[0]-5],[5,imsz[0]-5]], dtype = np.float32), self.params)
-                else:
-                    real = read_image(os.path.join(self.unsup_dir, name.decode() + '.jpg'))
-                return real
-
-#             unsup = unsup.map(lambda name: tuple(tf.py_func(name2unsup, [name], [tf.float32])), num_parallel_calls = num_threads)
-
-            def name2real2syn(name):
-                fakes = [
-                    read_image(os.path.join(path, name.decode().replace("_front", "") + '.jpg'))
-                    for path in fake_dirs.values()
-                ]
-                inst = read_instr(os.path.join(inst_dir, name.decode().replace("_front", "") + '.png'))
-                real = read_image(os.path.join(real_dir, '160x160', params.get('xfer_type', 'gray'), name.decode() + '.jpg'))
-                return [real] + fakes + [inst]
 
             def name2rend2realtran(name):
-                real_path1 = os.path.join(real_dir, '160x160', params.get('xfer_type', 'gray'), name.decode() + '.jpg')
-                # real_path2 = os.path.join(real_dir, '160x160', params.get('xfer_type', 'gray'), name.decode() + '_front' + '.jpg')
+                real_path1 = os.path.join(real_dir, '160x160', 'gray', name.decode() + '.jpg')
+                # real_path2 = os.path.join(real_dir, '160x160', 'gray', name.decode() + '_front' + '.jpg')
                 inst_path1 = os.path.join(inst_dir, name.decode() + '.png')
                 # inst_path2 = os.path.join(inst_dir, name.decode() + '_front' + '.png')
                 if os.path.exists(real_path1):
                     real = read_image(real_path1)
                     rend = read_image(os.path.join(fake_dirs['rend'], name.decode() + '.jpg'))
                     inst = read_instr(inst_path1)
-                # elif os.path.exists(real_path2):
-                #     real = read_image(real_path2)
-                #     rend = read_image(os.path.join(fake_dirs['rend'], name.decode() + '.jpg'), mirror=True)
-                #     inst = read_instr(inst_path2)
                 else:
-                    real = read_image(os.path.join(self.dataset_path, 'transfer/Cable1_019_0_19/' + params.get('xfer_type', 'gray'), name.decode() + '.jpg'))
+                    real = read_image(os.path.join(self.dataset_path, 'transfer/Cable1_019_0_19/' + 'gray', name.decode() + '.jpg'))
                     rend = read_image(os.path.join(fake_dirs['rend'], name.decode() + '.jpg'))
                     inst = read_instr(inst_path1)
                 return [real, rend, inst]
@@ -226,19 +173,8 @@ class Loader(object):
                 return {'synt': synt, 'real': real}
 
             # zip all, batch and prefetch
-            #dataset = Dataset.zip((rend, xfer, real, inst_synt, inst_real))
-            if params.get('match_mode', 1) == 1:
-                synt_types = [tf.float32 for _ in self.fakes] + [tf.int32]
-                synt = synt.map(lambda name: tf.py_func(name2synt, [name], synt_types), num_parallel_calls = num_threads)
-                real = real.map(lambda name: tuple(tf.py_func(name2real, [name], [tf.float32, tf.int32])), num_parallel_calls = num_threads)
-                dataset = Dataset.zip({ 'synt': synt, 'real': real }) # , 'unsup': unsup
-
-            elif params.get('match_mode', 1) == 2:
-                synt_types = [tf.float32 for _ in self.fakes] + [tf.int32]
-                temp = real.map(lambda name: tuple(tf.py_func(name2real2syn, [name], [tf.float32] + synt_types)), num_parallel_calls = num_threads)
-                dataset = temp.map(map_to_dataset, num_parallel_calls=num_threads)              
-
-            elif params.get('match_mode', 1) == 3 and not params.get('use_tran', 0):
+            #dataset = Dataset.zip((rend, xfer, real, inst_synt, inst_real))            
+            if not self.params.get('use_tran', 0):
                 temp = synt.map(lambda name: tuple(tf.py_func(name2rend2realtran, [name], [tf.float32, tf.float32, tf.int32])), num_parallel_calls = num_threads)
                 dataset = temp.map(map_to_dataset, num_parallel_calls=num_threads)
 
@@ -279,7 +215,12 @@ class Loader(object):
                     self.params['augment_scale'] = 0.
                     real = random_crop(full, pnts, self.params)
                 else:
-                    real = read_image(os.path.join(real_dir, '160x160', 'gray', name.decode() + '.jpg'))
+                    real_path1 = os.path.join(real_dir, '160x160', 'gray', name.decode() + '.jpg')
+                    real_path2 = os.path.join(self.dataset_path, 'transfer/Cable1_019_0_19/' + 'gray', name.decode() + '.jpg')
+                    if os.path.exists(real_path1):
+                        real = read_image(real_path1)
+                    else:
+                        real = read_image(real_path2)
                 return real, inst, name.decode()
             real = real.map(lambda name: tuple(tf.py_func(name2real, [name], [tf.float32, tf.int32, tf.string])), num_parallel_calls = num_threads)
 
