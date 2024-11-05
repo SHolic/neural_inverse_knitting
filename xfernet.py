@@ -26,7 +26,7 @@ label_directory = './dataset/instruction-complete'
 test_list_file = './dataset/test_real.txt'
 
 # 模型保存路径
-checkpoint_dir = './checkpoint/xfer_complete_from160k'
+checkpoint_dir = './checkpoint/xfer_complete_frompred'
 if not os.path.exists(checkpoint_dir):
     os.makedirs(checkpoint_dir)
 
@@ -53,21 +53,20 @@ def save_instr(fname, img):
         255, 0, 16,       # FK
         30, 206, 30,      # BK
         255, 255, 128,    # T
-        0, 255, 127,      # H|M
-        130, 210, 210,    # M
-        34, 139, 34,      # E|V(L)
-        0, 191, 255,      # V|HM
-        0, 129, 69,       # V(R)
+        0, 255, 127,     # H,M
+        130, 210, 210,   # M
+        34, 139, 34,     # E,V(L)
+        0, 191, 255,     # V,HM
+        0, 129, 69,      # V(R)
         255, 0, 190,      # V(L)
         255, 164, 4,      # X(R)
         0, 117, 220,      # X(L)
-        117, 59, 59,      # S
         179, 179, 179,    # T(F)
-        255, 215, 0,      # V|M
+        255, 215, 0,      # V,M
         255, 105, 180,    # T(B)
-        160, 32, 240,     # M|H(B)
-        139, 69, 19,      # E|V(R)
-        0, 164, 255,      # V|FK
+        160, 32, 240,  # M,H(B)
+        139, 69, 19,      # E,V(R)
+        0, 164, 255,      # V,FK
         255, 30, 30,      # FK, MAK
         230, 230, 110,    # FT, FKMAK
         220, 200, 100,    # FT, MBK
@@ -78,13 +77,13 @@ def save_instr(fname, img):
         10, 250, 110,     # H, BK
         240, 20, 170,     # VL, FKMAK
         240, 100, 30,     # AO(2)
-        250, 110, 40,     # O(5), AK
+        250, 110, 40,    # O(5), AK
         200, 100, 70,     # O(5), FKBK
         220, 80, 60,      # BO(2)
         230, 90, 50,      # O(5), BK
         130, 10, 120,     # Y, MATBK
-        170, 10, 90       # FO(2)
-
+        170, 10, 90,      # FO(2)
+        25, 174, 255   #V,MH(B)
     ])
     img.save(fname)
 
@@ -110,7 +109,7 @@ def build_graph(global_step):
     logits = cnn_model(X)
 
     # 定义损失函数
-    loss_xentropy = tf_MILloss_xentropy(tf.squeeze(Y), logits)
+    loss_xentropy = tf_loss_xentropy(tf.squeeze(Y), logits)
     loss_xentropy *= (1. - 0.5) * 3.
     loss = tf.reduce_mean(loss_xentropy)
 
