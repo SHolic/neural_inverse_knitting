@@ -11,39 +11,24 @@ import argparse
 batch_size = 32
 num_epochs = 50
 initial_learning_rate = 0.001
-decay_steps = 2000  # 每 2000 步衰减一次
+decay_steps = 1000  # 每 2000 步衰减一次
 decay_rate = 0.1    # 衰减率
 display_step = 10   # 每隔多少步打印一次日志
 num_classes_input = 14  # 输入类别数（0到13）
 num_classes_output = 34  # 输出类别数（0到33）
 image_size = 20     # 图像尺寸
 
-# 数据路径
+# 默认数据路径和模型保存路径（当未指定参数时）
 train_list_file = './dataset/train_real.txt'
 val_list_file = './dataset/val_real.txt'
-input_directory = './checkpoint/RFINet_front_xferln_160k/eval'
+input_directory = './dataset/instruction-front'
 label_directory = './dataset/instruction-complete'
 test_list_file = './dataset/test_real.txt'
+checkpoint_dir = './checkpoint/xfer_complete_fromtrue'
 
-# 模型保存路径
-checkpoint_dir = './checkpoint/xfer_complete_frompred'
-if not os.path.exists(checkpoint_dir):
-    os.makedirs(checkpoint_dir)
-
-# 测试保存路径
-test_output_dir = os.path.join(checkpoint_dir, 'eval')
-if not os.path.exists(test_output_dir):
-    os.makedirs(test_output_dir)
-
-# 日志保存路径
-train_log_dir = os.path.join(checkpoint_dir, 'train')
-if not os.path.exists(train_log_dir):
-    os.makedirs(train_log_dir)
-
-val_log_dir = os.path.join(checkpoint_dir, 'val')
-if not os.path.exists(val_log_dir):
-    os.makedirs(val_log_dir)
-
+# 日志保存路径将在后面根据 checkpoint_dir 设置
+train_log_dir = None
+val_log_dir = None
 
 # 保存标签
 def save_instr(fname, img):
@@ -370,17 +355,62 @@ def inference(input_file, output_file):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('mode', choices=['train', 'test', 'inference'], help='Mode to run: train, test, or inference')
+    parser.add_argument('--dataset', choices=['default', 'sj', 'mj'], default='default', help='Dataset to use: default, sj, or mj')
+    parser.add_argument('--input_source', choices=['fromtrue', 'frompred'], default='fromtrue', help='Input source: fromtrue or frompred')
+    parser.add_argument('--checkpoint_dir', help='Checkpoint directory (for test and inference modes)')
     parser.add_argument('--input', help='Input file for inference')
     parser.add_argument('--output', help='Output file for inference')
     args = parser.parse_args()
 
+    # 根据参数设置数据路径和模型保存路径
+    # 默认设置
+    if args.dataset == 'default':
+        train_list_file = './dataset/train_real.txt'
+        val_list_file = './dataset/val_real.txt'
+        test_list_file = './dataset/test_real.txt'
+    elif args.dataset == 'sj':
+        train_list_file = './dataset/train_real_sj.txt'
+        val_list_file = './dataset/val_real_sj.txt'
+        test_list_file = './dataset/test_real_sj.txt'
+    elif args.dataset == 'mj':
+        train_list_file = './dataset/train_real_mj.txt'
+        val_list_file = './dataset/val_real_mj.txt'
+        test_list_file = './dataset/test_real_mj.txt'
+
+    # 设置输入数据路径和模型保存路径
+    if args.input_source == 'fromtrue':
+        input_directory = './dataset/instruction-front'
+        checkpoint_dir = f'./checkpoint/xfer_complete_fromtrue_{args.dataset}' if args.dataset != 'default' else './checkpoint/xfer_complete_fromtrue'
+    elif args.input_source == 'frompred':
+        input_directory = './checkpoint/RFINet_front_xferln_160k/eval'
+        checkpoint_dir = f'./checkpoint/xfer_complete_frompred_{args.dataset}' if args.dataset != 'default' else './checkpoint/xfer_complete_frompred'
+
+    # 更新日志保存路径
+    train_log_dir = os.path.join(checkpoint_dir, 'train')
+    val_log_dir = os.path.join(checkpoint_dir, 'val')
+    test_output_dir = os.path.join(checkpoint_dir, 'eval')
+
+    # 创建必要的目录
+    for directory in [checkpoint_dir, train_log_dir, val_log_dir, test_output_dir]:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+    # 如果在 test 或 inference 模式下指定了 checkpoint_dir，则覆盖
+    if args.checkpoint_dir:
+        checkpoint_dir = args.checkpoint_dir
+
     if args.mode == 'train':
         train()
     elif args.mode == 'test':
-        test()
+        if not checkpoint_dir:
+            print('Please provide --checkpoint_dir for test mode')
+        else:
+            test()
     elif args.mode == 'inference':
         if not args.input or not args.output:
             print('Please provide --input and --output for inference')
+        elif not checkpoint_dir:
+            print('Please provide --checkpoint_dir for inference mode')
         else:
             inference(args.input, args.output)
     else:
