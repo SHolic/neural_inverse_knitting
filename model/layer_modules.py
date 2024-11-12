@@ -13,7 +13,7 @@ from util import read_image, comp_confusionmat
 
 from .tensorflow_vgg import custom_vgg19
 
-prog_ch = 14
+prog_ch = 34
 nch_res = arch_para.resblk_DimCh
 resblk = [resi, [[conv, nch_res], [runit], [conv, nch_res]]]
 fn_clipping01 = lambda tensor: tf.fake_quant_with_min_max_args(tensor, min=0., max=1., num_bits=8)

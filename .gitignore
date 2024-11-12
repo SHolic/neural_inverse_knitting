@@ -6,6 +6,8 @@ chpt/
 data/
 checkpoint
 _checkpoint
+checkpoint-best
+checkpoint-best.zip
 env
 old
 dataset
