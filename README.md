@@ -1,6 +1,6 @@
 # Inverse Neural Knitting
 
-![total_real](images/total_real.jpg)
+![total_real](images/total_real.png)
 
 This repository contains code for the paper **"Automated Knitting Instruction Generation from Fabric Images
 Using Deep Learning"** (website).
