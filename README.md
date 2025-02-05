@@ -1,34 +1,95 @@
 # Inverse Neural Knitting
 
-![Teaser](images/teaser.jpg)
+![total_real](images/total_real.jpg)
 
-This repository contains code for the paper **"Neural Inverse Knitting: From Images to Manufacturing Instructions"** (http://proceedings.mlr.press/v97/kaspar19a.html).
-You can browse the dataset, results and more on the [project page](http://deepknitting.csail.mit.edu).
+This repository contains code for the paper **"Automated Knitting Instruction Generation from Fabric Images
+Using Deep Learning"** (website).
 
 ## Installing dependencies
-Several scripts assume a Linux environment with Bash, though it may work on MacOS and/or Windows with CigWIN (but was not tested there).
+Scripts assume a Linux environment with Bash (Ubuntu 18.04.6).
 
-In general, you need python 3, with several dependencies that can easily be installed with `pip`:
+The experimental environment was set up using Miniconda for dependency management and package installation. The following steps outline the configuration process, with all commands provided for reproducibility:
 
-```
-pip install -r requirements.txt
-```
+1. Install Miniconda
 
-We suggest doing so in a fresh virtual environment:
+   ```
+   wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+           bash Miniconda3-latest-Linux-x86_64.sh
+           source ~/.bashrc
+   ```
 
-```
-virtualenv -p python3 env
-. env/bin/activate
-```
+   
+
+2. Create and Activate Python 3.6 Environment
+
+   ```
+   conda create -n tf1.11 python=3.6 
+   conda activate tf1.11
+   ```
+
+3. Install GPU-Compatible TensorFlow and Dependencies
+
+   Install TensorFlow 1.11 and its associated dependencies, ensuring compatibility with the RTX 2070 and CUDA 9.0
+
+   ```
+   conda install tensorflow-gpu=1.11.0
+   conda install numpy=1.15.3
+   conda install scipy=1.1.0
+   ```
+
+4. Install CUDA Toolkit and cuDNN
+
+   ```
+   conda install cudatoolkit=9.0 cudnn=7.1
+   ```
+
+5. Install Python Package Requirements
+
+   Required Python packages were installed using the **requirements.txt** file provided in the project repository:
+
+   ```
+   pip install -r requirements.txt
+   ```
+
+6. Install ImageMagick for Image Processing
+
+   ImageMagick was used for image manipulation during the preprocessing stage. The following commands were used:
+
+   ```
+           sudo apt update
+           sudo apt install imagemagick
+           sudo apt install zip unzip
+   ```
+
+7. Set Up Jupyter Notebook for Interactive Development
+
+   Jupyter Notebook was installed to facilitate interactive code testing and experimentation:
+
+   ```
+   conda install jupyter
+   jupyter notebook --ip=0.0.0.0 --no-browser
+   ```
+
+8. Install Additional Libraries
+
+   For additional functionalities, the Scikit-learn library was installed:
+
+   ```
+   conda install scikit-learn
+   ```
 
 ## Downloading dependencies
 
-### Dependencies for inference only
-You will need at least a model.
-See the pre-trained [model page](http://deepknitting.csail.mit.edu/models/).
+### Models
+You will need to download the models:
 
-For the base network, you can use [MILCE](http://deepknitting.csail.mit.edu/models/experiment-real-milce.tar.gz).
-For the full `refiner + img2prog` setup, we suggest [alpha=0.5](http://deepknitting.csail.mit.edu/models/RFI-a0.5.tar.gz) or the [complex,alpha=0.5](http://deepknitting.csail.mit.edu/models/RFI-complex-a0.5.tar.gz), which generated the best results in the paper.
+```
+./checkpoint.sh
+```
+
+`RFI_complex_a0.5`  and `RFINet_front_xferln_160k` is used for **Scenario 1** which focuses on Front Label Generation. `RFI_complex_a0.5` is Kaspar's model which used for baseline. `RFINet_front_xferln_160k` is our best Generation model.
+
+All the model begin with `xfer_` is Inference model which focuses on Complete Label Inference. `xfer_complete_frompred_residual` is used for **Scenario 2**, which generates a complete label without prior knowledge of the input yarn. `xfer_complete_frompred_residual_mj` and `xfer_complete_frompred_residual_sj` are used for **Scenario 3**, distinguishing between single-yarn (sj) and multi-yarn (mj) categories. `xfer_complete_fromtrue_residual_mj` and `xfer_complete_fromtrue_residual_sj` are used for **Scenario 4**, directly uses ground truth front labels as input to produce complete labels, reducing dependency on the front label generation step.
 
 For the refiner network, you will need to download vgg16 in the vgg model directory.
 
@@ -38,7 +99,7 @@ cd model/tensorflow_vgg/
 ./download.sh
 ```
 
-### Dependencies for training
+### Datasets
 
 You will need to download the dataset:
 
