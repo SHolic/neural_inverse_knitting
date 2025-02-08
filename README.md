@@ -109,13 +109,20 @@ You will need to download the dataset:
 
 which gets extracted into the folder `dataset`.
 
+## Front Label Generation
 
-## Inference
+Obtain a front label from a real image. 
+
+![s1](images/refine_rend.png)
+
+### Scenario 1: Unknown Front Label
+
+#### Inference
 
 Inference can be done with
 
 ```
-./infer.sh -g 0 -c path_to/RFI-complex-a0.5 img1.jpg [img2.jpg ...]
+./infer.sh -g 0 -c checkpoint/RFINet_front_xferln_160k img1.jpg [img2.jpg ...]
 ```
 
 where
@@ -126,95 +133,56 @@ where
 
 This produces png outputs with same file names.
 
+Results will saved in `./checkpoint/RFINet_front_xferln_160k/eval`.
+
 **Input**
 
-![input](images/Cable2_046_16_0_back.jpg)
+![s1_input](images/img1.jpg)
 
 **Output**
 
-![output](images/Cable2_046_16_0_back-prog.png)
+![s1_output](images/img1.png)
 
-### Scale detection
+**Scale detection**
 
 At inference, you can specify the `-v` argument to output the average maximum softmax value of the output, which we use in the supplementary to automatically detect the best scale.
 For example:
 
 ```
-./infer.sh -g 0 -c checkpoint/RFI_complex_a0.5 -v img1.jpg
+./infer.sh -g 0 -c checkpoint/RFINet_front_xferln_160k -v img1.jpg
 ```
 
 A sample output ends with
 ```
 ...
-Generator variables: 1377554
+Generator variables: 1377359
  [*] Loading checkpoints...
- checkpoint/RFI_complex_a0.5/_lr-0.0005_batch-2/FeedForwardNetworks-150000
-  [*] Load SUCCESS
-  1 input-img (conf: m=0.767297, s=0.186642)
+checkpoint/RFINet_front_xferln_160k/_lr-0.0005_batch-2/FeedForwardNetworks-160000
+ [*] Load SUCCESS
+1 input-img1 (conf: m=0.840968, s=0.174491)
 
-  Processing Done!
+Processing Done!
 ```
 
 where for each image of the list `m` is the mean confidence, and `s` the standard deviation.
 
-### Rendering programs
-
-The repository ships with a pre-trained renderer simulating what the proprietary renderer does.
-This is a simple image translation network trained using the mapping from instructions to renderings.
-
-You can render a pattern instruction with
+#### Test
 
 ```
-CUDA_VISIBLE_DEVICES="0" python3 ./render.py myprog.png [prog2.png ...]
+python main.py --checkpoint_dir=./checkpoint/RFINet_front_xferln_160k --training=False
 ```
 
-where 
+Results will also saved in `./checkpoint/RFINet_front_xferln_160k/eval`.
 
-* `--output_dir=path_to_dir` can be used to specify the output directory
-* `CUDA_VISIBLE_DEVICES=0` is to select the first GPU only
-* `myprog.png` is a program output (from `infer.sh`), or a list of these
-
-**Input**
-
-![input](images/Cable2_046_16_0_back-prog.png)
-
-**Output**
-
-![output](images/Cable2_046_16_0_back-rend.png)
-
-### Visualizing programs
-
-We provide a visualization script to make program outputs more easily interpretable.
-
-```
-python3 ./test/visualize.py myprog.png [prog2.png ...]
-```
-
-will generate files `${file}_viz.png` using the same symbols and colors as shown in the paper.
-
-**Input**
-
-![input](images/Cable2_046_16_0_back-prog.png)
-
-**Output**
-
-![output](images/Cable2_046_16_0_back-viz.png)
-
-## Training from scratch
+#### Train
 
 You should make sure you have downloaded the dataset. You also probably want to download the vgg npy files (see dependencies).
 
 The training script goes through `run.sh` which passes further parameters to `main.py`.
-For example, to train the complex RFI network:
+For example, to train the RFI network:
 
 ```
-./run.sh -g 0 -c checkpoint/RFINet_complexnet --learning_rate 0.0005 --params discr_img=1,bvggloss=1,gen_passes=1,bloss_unsup=0,decay_steps=50000,decay_rate=0.3,bunet_test=3 --weights loss_D*=1.0,loss_G*=0.2
-```
-
-For the base `img2prog` network, use
-
-```
-./run.sh -g 0 -c checkpoint/img2prog --params use_resnet=1,use_rend=0,use_tran=0
+./run.sh -g 0 -c ./checkpoint/RFINet_front_xferln_160k --learning_rate 0.0005 --params discr_img=1,bvggloss=1,gen_passes=1,bloss_unsup=0,decay_steps=50000,decay_rate=0.3,bunet_test=3,use_tran=0,augment=0,bMILloss=0 --weights loss_D*=1.0,loss_G*=0.2 --max_iter 160000
 ```
 
 The code has many different types of network architectures that we tried (and some may or may not make sense anymore).
@@ -223,18 +191,105 @@ See the code to figure out what parameters can be tuned, notably see `model/m_fe
 **Note**: the `-c` parameter is a directory path for the named checkpoint. You can / should use your own for training.
 The only time it really matters is for inference, when the checkpoint must exist.
 
-## Testing
+## Complete Label Generation
 
-The test scripts are in `test`.
-They require the dataset.
+![s2](images/residual_label.png)
 
-Given a checkpoint, you can create the evaluation data for that checkpoint with `test/eval_checkpoint.sh`.
-The test inference results will be generated in a subdirectory `eval` of the checkpoint directory.
-Then, these will be used to create renderings and be copied together in the result folders with the checkpoint name.
+### Scenario 2: Unknown Yarn Type
 
-To create the ground truth results, use
+Obtain a complete label from a real image without prior knowledge of its sj/mj classification.
+
+#### Inference
+
 ```
-./test/results/create_gt.sh
+python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual --model_type residual --dataset default --input_source frompred --input img1.png --output s2img1p.png
+```
+
+#### Test
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual --model_type residual --dataset default --input_source frompred
+```
+
+#### Train
+
+```
+python xfernet.py train --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual --model_type residual --dataset default --input_source frompred
+```
+
+### Scenario 3: Known Yarn Type
+
+Obtain a complete label with knowledge of the sj/mj classification of the input image.
+
+#### Inference
+
+    python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_sj --model_type residual --dataset sj --input_source frompred --input img1.png --output img1_s3sjp.png
+or
+
+```
+python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_mj --model_type residual --dataset mj --input_source frompred --input img1.png --output img1_s3mjp.png
+```
+
+#### Test
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_frompred_sj --model_type residual --dataset sj --input_source frompred
+```
+
+or 
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_frompred_mj --model_type residual --dataset mj --input_source frompred
+```
+
+#### Train
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_frompred_sj --model_type residual --dataset sj --input_source frompred
+```
+
+or
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_frompred_mj --model_type residual --dataset mj --input_source frompred
+```
+
+### Scenario 4: Using Ground Truth Front Label
+
+Generate complete labels using a ground truth front label and knowledge of yarn type.
+
+#### Inference
+
+    python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_sj --model_type residual --dataset sj --input_source fromtrue --input img1.png --output img1_s3sjt.png
+
+or
+
+```
+python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_mj --model_type residual --dataset mj --input_source fromtrue --input img1.png --output img1_s3mjt.png
+```
+
+#### Test
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_sj --model_type residual --dataset sj --input_source fromtrue
+```
+
+or 
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_mj --model_type residual --dataset mj --input_source fromtrue
+```
+
+#### Train
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_sj --model_type residual --dataset sj --input_source fromtrue
+```
+
+or
+
+```
+python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_mj --model_type residual --dataset mj --input_source fromtrue
 ```
 
 ## References
@@ -242,19 +297,5 @@ To create the ground truth results, use
 If you use this code or system, please cite our paper:
 
 ```
-@InProceedings{pmlr-v97-kaspar19a,
-  title =   {Neural Inverse Knitting: From Images to Manufacturing Instructions},
-  author =  {Kaspar, Alexandre and Oh, Tae-Hyun and Makatura, Liane and Kellnhofer, Petr and Matusik, Wojciech},
-  booktitle = {Proceedings of the 36th International Conference on Machine Learning},
-  pages =   {3272--3281},
-  year =    {2019},
-  editor =  {Chaudhuri, Kamalika and Salakhutdinov, Ruslan},
-  volume =  {97},
-  series =  {Proceedings of Machine Learning Research},
-  address = {Long Beach, California, USA},
-  month =   {09--15 Jun},
-  publisher = {PMLR},
-  pdf =     {http://proceedings.mlr.press/v97/kaspar19a/kaspar19a.pdf},
-  url =     {http://proceedings.mlr.press/v97/kaspar19a.html},
-}
+TBD
 ```

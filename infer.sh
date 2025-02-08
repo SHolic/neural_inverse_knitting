@@ -82,7 +82,7 @@ echo "Files(${#inputs[@]}): ${inputs[@]}"
 tmpdir=$(mktemp -d)
 realdir="$tmpdir/real/160x160/gray"
 mkdir -p "$realdir"
-instdir="$tmpdir/instruction"
+instdir="$tmpdir/instruction-front"
 mkdir "$instdir"
 list="$tmpdir/test_real.txt"
 i=0
