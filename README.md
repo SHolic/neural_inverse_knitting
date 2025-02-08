@@ -56,9 +56,9 @@ The experimental environment was set up using Miniconda for dependency managemen
    ImageMagick was used for image manipulation during the preprocessing stage. The following commands were used:
 
    ```
-           sudo apt update
-           sudo apt install imagemagick
-           sudo apt install zip unzip
+   sudo apt update
+   sudo apt install imagemagick
+   sudo apt install zip unzip
    ```
 
 7. Set Up Jupyter Notebook for Interactive Development
