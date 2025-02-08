@@ -128,7 +128,7 @@ Inference can be done with
 where
 
 * `-g 0` is to select GPU 0
-* `-c checkpoint/RFI-complex-a0.5` is to use the selected model
+* `-c checkpoint/RFINet_front_xferln_160k` is to use the selected model
 * `img1.jpg` is an input image (can use a list of these)
 
 This produces png outputs with same file names.
