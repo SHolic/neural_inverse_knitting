@@ -297,5 +297,15 @@ python xfernet.py test --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_resi
 If you use this code or system, please cite our paper:
 
 ```
-TBD
+@article{sheng2025,
+  author = {H. Sheng and S. Cai and X. Zheng and M. Lau},
+  title = {Knitting robots: A deep learning approach for reverse-engineering fabric patterns},
+  journal = {Electronics},
+  volume = {14},
+  number = {8},
+  pages = {1605},
+  year = {2025},
+  month = {Apr.},
+  doi = {10.3390/electronics14081605}
+}
 ```
