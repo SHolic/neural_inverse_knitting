@@ -202,7 +202,7 @@ Obtain a complete label from a real image without prior knowledge of its sj/mj c
 #### Inference
 
 ```
-python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual --model_type residual --dataset default --input_source frompred --input ./inference_test/img1.png --output ./inference_test/img1_s2p.png
+python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual --model_type residual --dataset default --input_source frompred --input ./inference_test/img1.png --output ./inference_test
 ```
 
 #### Test
@@ -223,11 +223,11 @@ Obtain a complete label with knowledge of the sj/mj classification of the input 
 
 #### Inference
 
-    python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual_sj --model_type residual --dataset sj --input_source frompred --input ./inference_test/img1.png --output ./inference_test/img1_s3sjp.png
+    python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual_sj --model_type residual --dataset sj --input_source frompred --input ./inference_test/img1.png --output ./inference_test
 or
 
 ```
-python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual_mj --model_type residual --dataset mj --input_source frompred --input ./inference_test/img1.png --output ./inference_test/img1_s3mjp.png
+python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_frompred_residual_mj --model_type residual --dataset mj --input_source frompred --input ./inference_test/img1.png --output ./inference_test
 ```
 
 #### Test
@@ -260,12 +260,12 @@ Generate complete labels using a ground truth front label and knowledge of yarn 
 
 #### Inference
 
-    python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_residual_sj --model_type residual --dataset sj --input_source fromtrue --input ./inference_test/img1.png --output ./inference_test/img1_s3sjt.png
+    python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_residual_sj --model_type residual --dataset sj --input_source fromtrue --input ./inference_test/img1.png --output ./inference_test
 
 or
 
 ```
-python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_residual_mj --model_type residual --dataset mj --input_source fromtrue --input ./inference_test/img1.png --output ./inference_test/img1_s3mjt.png
+python xfernet.py inference --checkpoint_dir ./checkpoint/xfer_complete_fromtrue_residual_mj --model_type residual --dataset mj --input_source fromtrue --input ./inference_test/img1.png --output ./inference_test
 ```
 
 #### Test

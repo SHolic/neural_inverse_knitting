@@ -477,7 +477,7 @@ def test(model_type):
         print('Testing Finished.')
 
 # 推理函数
-def inference(input_file, output_file, model_type):
+def inference(input_files, output_dir, model_type):
     global_step = tf.Variable(0, trainable=False, name='global_step')
 
     # 构建计算图
@@ -494,25 +494,39 @@ def inference(input_file, output_file, model_type):
             print('No checkpoint found in', checkpoint_dir)
             return
 
-        # 加载输入图像
-        input_img = read_instr(input_file)
+        input_batch = []
+        output_paths = []
+        for input_file in input_files:
+            # 加载输入图像
+            input_img = read_instr(input_file)
 
-        # 确保图像形状为 (height, width, 1)
-        if input_img.ndim == 2:
-            input_img = np.expand_dims(input_img, axis=-1)
+            # 确保图像形状为 (height, width, 1)
+            if input_img.ndim == 2:
+                input_img = np.expand_dims(input_img, axis=-1)
+            input_batch.append(input_img)
 
-        input_img = np.expand_dims(input_img, axis=0)  # 添加 batch 维度
+            # 构造输出路径
+            base_name = os.path.basename(input_file)         # e.g., img123.jpg
+            name_only = os.path.splitext(base_name)[0]       # e.g., img123
+            output_file = os.path.join(output_dir, name_only + '.png')
+            output_paths.append(output_file)
 
-        feed_dict = {X: input_img}
-        pred = sess.run(predictions, feed_dict=feed_dict)
-        pred_img = pred[0]
+        input_batch = np.array(input_batch)  # shape: [batch_size, H, W, 1]
 
-        # 确保预测结果形状为 (height, width, 1)
-        if pred_img.ndim == 2:
-            pred_img = np.expand_dims(pred_img, axis=-1)
+        # 推理
+        feed_dict = {X: input_batch}
+        preds = sess.run(predictions, feed_dict=feed_dict)
 
-        save_instr(output_file, pred_img)
-        print('Inference result saved to:', output_file)
+        # 保存输出
+        for pred_img, output_file in zip(preds, output_paths):
+            if pred_img.ndim == 2:
+                pred_img = np.expand_dims(pred_img, axis=-1)
+
+            save_instr(output_file, pred_img)
+            print('Inference result saved to:', output_file)
+
+        print('Inference completed for all inputs.')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -520,8 +534,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', choices=['default', 'sj', 'mj'], default='default', help='Dataset to use: default, sj, or mj')
     parser.add_argument('--input_source', choices=['fromtrue', 'frompred'], default='frompred', help='Input source: fromtrue or frompred')
     parser.add_argument('--checkpoint_dir', help='Checkpoint directory')
-    parser.add_argument('--input', help='Input file for inference')
-    parser.add_argument('--output', help='Output file for inference')
+    parser.add_argument('--input', nargs='+', help='Input file(s) for inference')
+    parser.add_argument('--output', help='Output dir for inference')
     parser.add_argument('--model_type', choices=['cnn', 'residual', 'unet'], default='cnn', help='Model type to use')
     args = parser.parse_args()
 
